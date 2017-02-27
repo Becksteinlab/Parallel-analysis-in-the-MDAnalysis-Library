@@ -1,0 +1,2 @@
+# Parallel-analysis-in-the-MDAnalysis-Library
+We present a benchmark suite that can be used to evaluate performance for parallel map-reduce type analysis and use it to investigate the performance of MDAnalysis with the Dask library for task-graph based computing. A range of commonly used MD file formats (CHARMM/NAMD DCD, Gromacs XTC, Amber NetCDF) and different trajectory sizes are tested on different high-performance computing (HPC) resources. Benchmarks are performed both on a single node and across multiple nodes. 
