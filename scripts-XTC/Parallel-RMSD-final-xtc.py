@@ -7,12 +7,9 @@ import dask
 from dask.delayed import delayed
 from dask import multiprocessing
 from dask.multiprocessing import get
-import matplotlib
-import matplotlib.pyplot as plt
 from MDAnalysis.analysis.align import rotation_matrix
 from MDAnalysis.core.qcprot import CalcRMSDRotationalMatrix
 import time
-from IPython.display import display
 from shutil import copyfile
 import glob, os
 
@@ -102,10 +99,10 @@ with open('data.txt', mode='w') as file:
         block_size = [1,2,4,6,8,10,12]
         for i in block_size:      # changing blocks
             for j in range(1,6):    # changing files (5 files per block size)
-                longDCD1 = 'newtraj1.xtc'
-                longDCD2 = 'newtraj{}.xtc'.format(ii)
-                copyfile(longDCD1, longDCD2)
-                u = mda.Universe(PSF, longDCD2)
+                longXTC1 = 'newtraj1.xtc'
+                longXTC2 = 'newtraj{}.xtc'.format(ii)
+                copyfile(longXTC1, longXTC2)
+                u = mda.Universe(PSF, longXTC2)
                 print(u)
                 print("frames in trajectory {} for traj_size {}".format(u.trajectory.n_frames, k))
                 print (len(u.trajectory))

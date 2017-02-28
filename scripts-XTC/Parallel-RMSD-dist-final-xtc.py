@@ -7,8 +7,6 @@ import dask
 from dask.delayed import delayed
 from dask import multiprocessing
 from dask.multiprocessing import get
-import matplotlib
-import matplotlib.pyplot as plt
 from MDAnalysis.analysis.align import rotation_matrix
 from MDAnalysis.core.qcprot import CalcRMSDRotationalMatrix
 import time
