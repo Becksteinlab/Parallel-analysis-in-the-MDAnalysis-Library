@@ -111,6 +111,6 @@ with open('data.txt', mode='w') as file:
                 tot_time = time.time()-start
                 file.write("XTC{} {} {} {} {} {} {} {}\n".format(k, i, j, output [1], output [2], output [3], output [4], tot_time))
 		file.flush()
-                os.remove('newtraj{}.xtc'.format(ii))
+                os.remove('newtraj{}.dcd'.format(ii))
                 ii = ii+1
                                                       

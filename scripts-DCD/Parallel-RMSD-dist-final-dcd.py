@@ -129,6 +129,6 @@ with open('data.txt', mode='w') as file:
                 file.write("XTC{} {} {} {} {} {} {} {}\n".format(k, i, j, output [1], output [2], output [3], output [4], tot_time))  
                 file.flush() 
                 # Deleting all files
-                os.remove('newtraj{}.xtc'.format(ii))
+                os.remove('newtraj{}.dcd'.format(ii))
                 ii = ii+1    
 
