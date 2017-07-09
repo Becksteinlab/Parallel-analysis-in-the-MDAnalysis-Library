@@ -96,23 +96,25 @@ print("Hello, World! I am process {} of {} with {} and {}.\n".format(rank, size,
 start3 = time.time()
 out = block_rmsd(index, topology, trajectory, xref0, start=start, stop=stop, step=1) 
 #print("Hello, World! I am process {} of {} with {} and {}.\n".format(rank, size, out[1], out[2]))
+
 start4 = time.time()
 # Reduction Process
-start5 = time.time()
-data = comm.gather(out, root=0)
-
-if rank == 0: 
-   data = data
-   # print(len(data))
+if rank == 0:
+   data1 = np.zeros([size*bsize,2], dtype=float)
+   data = np.zeros([size,2], dtype=float)
 else:
+   data1 = None
    data = None
 
-start6 = time.time()
+comm.Gather(out[0], data1, root=0)
+comm.Gather(np.array(out[1:], dtype=float), data, root=0)
+
+start5 = time.time()
 
 # Cost Calculation
 init_time = start2-start1
 comm_time1 = start3-start2
-comm_time2 = start6-start5
+comm_time2 = start5-start4
 comp_time = start4-start3
 tot_time = comp_time+comm_time2+comm_time1
 
@@ -143,7 +145,7 @@ if rank == 0:
    print(tot_time, comm_time1, comm_time2)
    with open('data1.txt', mode='a') as file1:
         for i in range(size):
-            file1.write("{} {} {} {} {}\n".format(size, j, i, data[i][1], data[i][2]))
+            file1.write("{} {} {} {} {}\n".format(size, j, i, data[i][0], data[i][1]))
    with open('data2.txt', mode='a') as file2:
         file2.write("{} {} {}\n".format(size, j, tot_time))
         file2.write("{} {} {}\n".format(size, j, init_time))
