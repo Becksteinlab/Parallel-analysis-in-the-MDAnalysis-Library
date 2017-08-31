@@ -50,7 +50,7 @@ Please raise issues in the [issue tracker][] or ask on the
 
 [KhoshlessanScipy2017]: #KhoshlessanScipy2017
 <a name="KhoshlessanScipy2017">M. Khoshlessan, I. Paraskevakos, S. Jha, and O. Beckstein (2017)</a>. 
-_Parallel analysis in MDAnalysis using the Dask parallel computing library_.
+[_Parallel analysis in MDAnalysis using the Dask parallel computing library_](http://conference.scipy.org/proceedings/scipy2017/mahzad_khoslessan.html).
 In S. Benthall and S. Rostrup, editors, Proceedings of the 16th Python in Science Conference, Austin, TX, 2017. SciPy. 
    
 [Khoshlessan2017]: #Khoshlessan2017
