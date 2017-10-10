@@ -13,7 +13,9 @@ import glob, os
 from MDAnalysis import Writer
 import mpi4py
 from mpi4py import MPI
+import gc
 
+gc.disable()
 #---------------------------------------
 MPI.Init
 
@@ -39,27 +41,30 @@ def block_rmsd(index, topology, trajectory, xref0, start=None, stop=None, step=N
     bsize = int(stop-start)
     results = np.zeros([bsize,2], dtype=float)
     t_comp = np.zeros(bsize, dtype=float)
+    t_IO = np.zeros(bsize, dtype=float)
     
     start1 = time.time()
+    start0 = start1 
     for iframe, ts in enumerate(clone.trajectory[start:stop:step]):
         start2 = time.time()
         results[iframe, :] = ts.time, rmsd(g, xref0)
         t_comp[iframe] = time.time()-start2
+        t_IO[iframe] = start2-start1
+        start1 = time.time()
 
-    t_all_frame = time.time()-start1
-    t_comp_final = np.mean(t_comp)  
-  
-#    print("Hello, World! I am process {} of {} with {} and {}.\n".format(rank, size, t_comp_final, t_all_frame))
+    t_all_frame = time.time()-start0
+    t_IO_final = np.mean(t_IO)
+    t_comp_final = np.mean(t_comp)
 
-    return results, t_comp_final, t_all_frame 
+    return results, t_comp_final, t_IO_final, t_all_frame
 #-----------------------------------------------------------------------
-DCD1 = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/1ake_007-nowater-core-dt240ps.dcd')))
-PSF = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/adk4AKE.psf')))
+DCD1 = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files_striped/1ake_007-nowater-core-dt240ps.dcd')))
+PSF = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files_striped/adk4AKE.psf')))
 # Check the files in the directory
-filenames = os.listdir(os.path.join(os.getcwd(),'files'))
+filenames = os.listdir(os.path.join(os.getcwd(),'files_striped'))
 print (filenames)
-longXTC = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/newtraj.xtc')))
-longXTC1 = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/newtraj{}.xtc'.format(j))))
+longXTC = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files_striped/newtraj.xtc')))
+longXTC1 = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files_striped/newtraj{}.xtc'.format(j))))
 
 if rank == 0:
    copyfile(longXTC, longXTC1)
@@ -90,69 +95,73 @@ for iblock in range(size):
 d = dict([key, frames_seg[key]] for key in range(size))  
 
 start, stop = d[rank][0], d[rank][1] 
-print("Hello, World! I am process {} of {} with {} and {}.\n".format(rank, size, start, stop))
 
 # Block-RMSD in Parallel
 start3 = time.time()
 out = block_rmsd(index, topology, trajectory, xref0, start=start, stop=stop, step=1) 
-#print("Hello, World! I am process {} of {} with {} and {}.\n".format(rank, size, out[1], out[2]))
 
 start4 = time.time()
-# Reduction Process
 if rank == 0:
    data1 = np.zeros([size*bsize,2], dtype=float)
-   data = np.zeros([size,2], dtype=float)
 else:
    data1 = None
-   data = None
 
 comm.Gather(out[0], data1, root=0)
-comm.Gather(np.array(out[1:], dtype=float), data, root=0)
 
 start5 = time.time()
+if rank == 0:
+    data = np.zeros([size,3], dtype=float)
+else:
+    data = None
 
-# Cost Calculation
+comm.Gather(np.array(out[1:], dtype=float), data, root=0)
+
+start6 = time.time()
+
+#print('Cost Calculation')
 init_time = start2-start1
 comm_time1 = start3-start2
 comm_time2 = start5-start4
+comm_time3 = start6-start5
 comp_time = start4-start3
-tot_time = comp_time+comm_time2+comm_time1
+tot_time = comp_time+comm_time2
 
 tot_time = comm.gather(tot_time, root=0)
 init_time = comm.gather(init_time, root=0)
 comm_time1 = comm.gather(comm_time1, root=0)
 comm_time2 = comm.gather(comm_time2, root=0)
+comm_time3 = comm.gather(comm_time3, root=0)
 comp_time = comm.gather(comp_time, root=0)
 
 if rank == 0:
-   tot_time = tot_time
-   init_time = init_time
-   comm_time1 = comm_time1
-   comm_time2 = comm_time2
-   comp_time = comp_time
+    tot_time = tot_time
+    init_time = init_time
+    comm_time1 = comm_time1
+    comm_time2 = comm_time2
+    omm_time3 = comm_time3
+    comp_time = comp_time
 else:
-   tot_time = None
-   init_time = None
-   comm_time1 = None
-   comm_time2 = None
-   comp_time = None
+    tot_time = None
+    init_time = None
+    comm_time1 = None
+    comm_time2 = None
+    comm_time3 = None
+    comp_time = None
 
-
-# Storing the data
 if rank == 0:
-   os.remove('files/newtraj{}.xtc'.format(j))   
-   os.remove('files/.newtraj{}.xtc_offsets.npz'.format(j))
-   print(tot_time, comm_time1, comm_time2)
-   with open('data1.txt', mode='a') as file1:
+    os.remove('files_striped/newtraj{}.xtc'.format(j))
+    os.remove('files_striped/.newtraj{}.xtc_offsets.npz'.format(j))
+    print(tot_time, comm_time1, comm_time2)
+    with open('data1.txt', mode='a') as file1:
         for i in range(size):
             file1.write("{} {} {} {} {}\n".format(size, j, i, data[i][0], data[i][1]))
-   with open('data2.txt', mode='a') as file2:
+    with open('data2.txt', mode='a') as file2:
         file2.write("{} {} {}\n".format(size, j, tot_time))
         file2.write("{} {} {}\n".format(size, j, init_time))
-        file2.write("{} {} {}\n".format(size, j, comm_time1)) 
+        file2.write("{} {} {}\n".format(size, j, comm_time1))
         file2.write("{} {} {}\n".format(size, j, comm_time2))
-        file2.write("{} {} {}\n".format(size, j, comp_time))	
-	
+        file2.write("{} {} {}\n".format(size, j, comm_time3))
+        file2.write("{} {} {}\n".format(size, j, comp_time))
 
 MPI.Finalize
 
