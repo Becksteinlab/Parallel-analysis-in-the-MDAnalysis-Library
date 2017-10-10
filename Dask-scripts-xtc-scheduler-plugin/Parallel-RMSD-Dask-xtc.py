@@ -40,8 +40,8 @@ print (type (Scheduler_IP))
 c = Client(Scheduler_IP)
 print (mda.__version__)
 
-DCD1 = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'../1ake_007-nowater-core-dt240ps.dcd')))
-PSF = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'../adk4AKE.psf')))
+DCD1 = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/1ake_007-nowater-core-dt240ps.dcd')))
+PSF = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/adk4AKE.psf')))
 # Check the files in the directory
 filenames = os.listdir(os.getcwd())
 print (filenames)
@@ -121,20 +121,8 @@ with open('data.txt', mode='a') as file:
     for k in traj_size: # we have 3 trajectory sizes
         # Creating the universe for doing benchmark
         u1 = mda.Universe(PSF, DCD1)
-        longDCD = 'newtraj.dcd'
-
-        # Creating big trajectory sizes from initial trajectory
-        with mda.Writer(longDCD, u1.atoms.n_atoms) as W:
-             for i in range (k):
-                for ts in u1.trajectory:
-                    W.write(u1)
-        u = mda.Universe(PSF, longDCD)
-
-        # Coverting DCD files into XTC files
-        longXTC = 'newtraj.xtc'
-        with Writer(longXTC, u.trajectory.n_atoms) as w:
-             for ts in u.trajectory:
-                 w.write(ts)
+    
+        longXTC = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/newtraj.xtc')))
 
         # Doing benchmarks
         ii=1
@@ -142,8 +130,8 @@ with open('data.txt', mode='a') as file:
         for i in block_size:      # changing blocks
             for j in range(1,6):    # changing files (5 files per block size)
                 # Create a new filei
-                c.run_on_scheduler(submitCustomProfiler,'/scratch/03170/tg824689/BecksteinLab/script-XTC3/XTC_{}_{}_{}.txt'.format(k,i,j))
-                longXTC1 = 'newtraj{}.xtc'.format(ii)
+                c.run_on_scheduler(submitCustomProfiler,os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/XTC_{}_{}_{}.txt'.format(k,i,j)))))
+                longXTC1 = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/newtraj{}.xtc'.format(ii))))
                 copyfile(longXTC, longXTC1)
                 # Provide the path to my file to all processes
                 my_path = os.path.normpath(os.path.join(os.getcwd(), longXTC1))
@@ -162,9 +150,9 @@ with open('data.txt', mode='a') as file:
                 tot_time = time.time()-start
                 output_time = (np.tile([i,j],(i,1)),) + output[1:4]
                 output_time_f = np.hstack(output_time)
-                pd.DataFrame(a).to_csv(file)
+                pd.DataFrame(output_time_f).to_csv(file)
                 c.run_on_scheduler(removeCustomProfiler)
-                np.save('XTC{}_{}_{}.npz.npy'.format(k,i,j),[output[4],output[5]])
+                np.save('files/XTC{}_{}_{}.npz.npy'.format(k,i,j),[output[4],output[5]])
                 # Deleting all files
-                os.remove('newtraj{}.xtc'.format(ii))
+                os.remove(os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files/newtraj{}.xtc'.format(ii)))))
                 ii = ii+1
