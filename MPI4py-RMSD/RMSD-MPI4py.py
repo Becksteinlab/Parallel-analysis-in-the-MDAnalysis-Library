@@ -33,8 +33,11 @@ def rmsd(mobile, xref0):
     return CalcRMSDRotationalMatrix(xref0.T.astype(np.float64), xmobile0.T.astype(np.float64),mobile.n_atoms, None, None)
 
 def block_rmsd(index, topology, trajectory, xref0, start=None, stop=None, step=None):
+    
+    start3 = time.time()
     clone = mda.Universe(topology, trajectory)
     g = clone.atoms[index]
+    start4 = time.time()
     
     print("block_rmsd", start, stop, step)
     
@@ -56,7 +59,7 @@ def block_rmsd(index, topology, trajectory, xref0, start=None, stop=None, step=N
     t_IO_final = np.mean(t_IO)
     t_comp_final = np.mean(t_comp)
 
-    return results, t_comp_final, t_IO_final, t_all_frame
+    return results, t_comp_final, t_IO_final, t_all_frame, (start4-start3)
 #-----------------------------------------------------------------------
 DCD1 = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files_striped/1ake_007-nowater-core-dt240ps.dcd')))
 PSF = os.path.abspath(os.path.normpath(os.path.join(os.getcwd(),'files_striped/adk4AKE.psf')))
@@ -110,7 +113,7 @@ comm.Gather(out[0], data1, root=0)
 
 start5 = time.time()
 if rank == 0:
-    data = np.zeros([size,3], dtype=float)
+    data = np.zeros([size,4], dtype=float)
 else:
     data = None
 
@@ -154,7 +157,7 @@ if rank == 0:
     print(tot_time, comm_time1, comm_time2)
     with open('data1.txt', mode='a') as file1:
         for i in range(size):
-            file1.write("{} {} {} {} {}\n".format(size, j, i, data[i][0], data[i][1]))
+            file1.write("{} {} {} {} {} {} {}\n".format(size, j, i, data[i][0], data[i][1], data[i][2], data[i][3]))
     with open('data2.txt', mode='a') as file2:
         file2.write("{} {} {}\n".format(size, j, tot_time))
         file2.write("{} {} {}\n".format(size, j, init_time))
